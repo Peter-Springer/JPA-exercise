@@ -1,5 +1,7 @@
 package com.allstate.compozed.springplayground.lesson;
 
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -23,7 +25,13 @@ public class LessonController {
     }
 
     @GetMapping("/{id}")
-    public LessonModel read(@PathVariable Long id) { return this.repository.findOne(id); }
+    public ResponseEntity<LessonModel> read(@PathVariable Long id) {
+
+        if (this.repository.findOne(id) == null) {
+            return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+        }
+        return new ResponseEntity<>(this.repository.findOne(id), HttpStatus.MULTI_STATUS.OK);
+    }
 
     @PutMapping("/{id}")
     public LessonModel update(@PathVariable Long id, @RequestBody LessonModel lesson) {

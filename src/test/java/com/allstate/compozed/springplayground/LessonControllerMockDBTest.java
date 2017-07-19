@@ -5,7 +5,9 @@ import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.servlet.MockMvc;
@@ -33,7 +35,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @RunWith(SpringRunner.class)
 @WebMvcTest(LessonController.class)
-public class LessonControllerTest {
+public class LessonControllerMockDBTest {
 
     @Autowired
     private MockMvc mockMvc;
@@ -45,7 +47,7 @@ public class LessonControllerTest {
     public void createDelegatesToRepository() throws Exception {
         //Setup
         when(repository.save(any(LessonModel.class))).then(returnsFirstArg());
-        
+
         final MockHttpServletRequestBuilder post = post("/lessons")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("{\"title\":\"Mock me another one!\"}");
@@ -125,11 +127,11 @@ public class LessonControllerTest {
     public void readReturnsSingleItem( ) throws Exception {
 
         Long id = new Random().nextLong();
-        LessonModel lesson = new LessonModel();
-        lesson.setId(id);
-        lesson.setTitle("List single item");
+        ResponseEntity<LessonModel> lesson = new ResponseEntity<>(new LessonModel(), HttpStatus.OK);
+        lesson.getBody().setId(id);
+        lesson.getBody().setTitle("List single item");
 
-        when(repository.findOne(id)).thenReturn(lesson);
+        when(repository.findOne(id)).thenReturn(lesson.getBody());
 
         //Exercise
         final MockHttpServletRequestBuilder request = get("/lessons/{id}", id);
@@ -187,6 +189,15 @@ public class LessonControllerTest {
 
         verify(repository).delete(id);
 
+    }
+
+    @Test public void readSends4XXStatusWhenIdNotFound() throws Exception {
+
+        final MockHttpServletRequestBuilder request = get("/lessons/3");
+
+        mockMvc.perform(request)
+                .andDo(print())
+                .andExpect(status().is4xxClientError());
     }
 
 }
