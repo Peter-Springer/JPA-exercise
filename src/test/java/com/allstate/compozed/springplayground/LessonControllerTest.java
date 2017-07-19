@@ -12,6 +12,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 
+import java.security.PublicKey;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -24,8 +25,8 @@ import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -44,7 +45,7 @@ public class LessonControllerTest {
     public void createDelegatesToRepository() throws Exception {
         //Setup
         when(repository.save(any(LessonModel.class))).then(returnsFirstArg());
-
+        
         final MockHttpServletRequestBuilder post = post("/lessons")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("{\"title\":\"Mock me another one!\"}");
@@ -120,4 +121,72 @@ public class LessonControllerTest {
 
         verify(repository).findAll();
     }
+    @Test
+    public void readReturnsSingleItem( ) throws Exception {
+
+        Long id = new Random().nextLong();
+        LessonModel lesson = new LessonModel();
+        lesson.setId(id);
+        lesson.setTitle("List single item");
+
+        when(repository.findOne(id)).thenReturn(lesson);
+
+        //Exercise
+        final MockHttpServletRequestBuilder request = get("/lessons/{id}", id);
+
+        //Assert
+        mockMvc.perform(request)
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id", equalTo(id)))
+                .andExpect(jsonPath("$.title", equalTo("List single item")));
+
+        verify(repository).findOne(id);
+    }
+
+    @Test
+    public void updateUpdatesSingleItem( ) throws Exception {
+
+        Long id = new Random().nextLong();
+        LessonModel lesson = new LessonModel();
+        lesson.setId(id);
+        lesson.setTitle("List single item");
+
+        when(repository.save(any(LessonModel.class))).then(returnsFirstArg());
+        when(repository.findOne(id)).thenReturn(lesson);
+
+        final MockHttpServletRequestBuilder request = put("/lessons/{id}", id)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"title\":\"PUT!!\"}");
+
+        mockMvc.perform(request)
+                .andExpect(status().isOk())
+                .andDo(print())
+                .andExpect(jsonPath("$.id", equalTo(id)))
+                .andExpect(jsonPath("$.title", equalTo("PUT!!")));
+
+        verify(repository).save(any(LessonModel.class));
+
+    }
+
+    @Test
+    public void deleteRemovesSingleRecord() throws Exception {
+
+        Long id = new Random().nextLong();
+        LessonModel lesson = new LessonModel();
+        lesson.setId(id);
+        lesson.setTitle("Delete this record");
+
+        when(repository.save(any(LessonModel.class))).then(returnsFirstArg());
+        when(repository.findOne(id)).thenReturn(lesson);
+
+        final MockHttpServletRequestBuilder request = delete("/lessons/{id}", id);
+
+        mockMvc.perform(request)
+                .andExpect(status().isOk())
+                .andDo(print());
+
+        verify(repository).delete(id);
+
+    }
+
 }
